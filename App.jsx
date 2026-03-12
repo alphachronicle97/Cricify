@@ -2,28 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const SUPABASE_URL = "https://rnmiuggvwvluzpqicjqn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_VzshP4nH__Mk5BEplgO5VQ_QiIgnUt8";
-const ADMIN_PASSWORD = "*kanishka@#23122010*";
-
-const fetchGoogleNews = async () => {
-  try {
-    const res = await fetch(
-      "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss/search?q=cricket+india&hl=en-IN&gl=IN&ceid=IN:en"
-    );
-    const data = await res.json();
-    if (data.items) {
-      return data.items.slice(0, 8).map(n => ({
-        title: n.title,
-        tag: "CRICKET",
-        time: new Date(n.pubDate).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-        hot: true,
-      }));
-    }
-    return [];
-  } catch { return []; }
-};
-    return await res.json();
-  } catch { return null; }
-};
+const ADMIN_PASSWORD = "*kanishka@#&23122010*";
 
 const C = {
   accent: "#ff4500", accentBright: "#ff6a00",
@@ -53,6 +32,24 @@ const dbGet = (table) => sb("GET", table, null, "?order=created_at.asc");
 const dbInsert = (table, data) => sb("POST", table, data);
 const dbUpdate = (table, id, data) => sb("PATCH", table, data, `?id=eq.${id}`);
 const dbDelete = (table, id) => sb("DELETE", table, null, `?id=eq.${id}`);
+
+const fetchGoogleNews = async () => {
+  try {
+    const res = await fetch(
+      "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dcricket%2Bindia%26hl%3Den-IN%26gl%3DIN%26ceid%3DIN%3Aen"
+    );
+    const data = await res.json();
+    if (data.items) {
+      return data.items.slice(0, 8).map(n => ({
+        title: n.title,
+        tag: "CRICKET",
+        time: new Date(n.pubDate).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+        hot: true,
+      }));
+    }
+    return [];
+  } catch { return []; }
+};
 
 const Input = ({ label, value, onChange, placeholder, type = "text" }) => (
   <div style={{ marginBottom: "12px" }}>
@@ -342,7 +339,6 @@ const MainWebsite = () => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [tickerIdx, setTickerIdx] = useState(0);
-  const [liveScores, setLiveScores] = useState([]);
 
   const loadData = useCallback(async () => {
     const [m, n, t] = await Promise.all([dbGet("matches"), dbGet("news"), dbGet("ticker")]);
@@ -351,25 +347,13 @@ const MainWebsite = () => {
   }, []);
 
   const loadApiData = useCallback(async () => {
-  try {
-    const res = await fetch(
-      "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss/search?q=cricket+india&hl=en-IN&gl=IN&ceid=IN:en"
-    );
-    const data = await res.json();
-    if (data.items) {
-      setApiNews(data.items.slice(0, 8).map(n => ({
-        title: n.title,
-        tag: "CRICKET",
-        time: new Date(n.pubDate).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-        hot: true,
-      })));
-    }
-  } catch {}
-}, []);
+    const items = await fetchGoogleNews();
+    if (items.length > 0) setApiNews(items);
+  }, []);
 
   useEffect(() => { loadData(); loadApiData(); }, [loadData, loadApiData]);
   useEffect(() => { const i = setInterval(loadData, 30000); return () => clearInterval(i); }, [loadData]);
-  useEffect(() => { const i = setInterval(loadApiData, 60000); return () => clearInterval(i); }, [loadApiData]);
+  useEffect(() => { const i = setInterval(loadApiData, 120000); return () => clearInterval(i); }, [loadApiData]);
   useEffect(() => {
     if (ticker.length === 0) return;
     const t = setInterval(() => setTickerIdx(p => (p+1) % ticker.length), 3000);
@@ -471,30 +455,16 @@ const MainWebsite = () => {
           )}
         </div>
         <div style={{ width: "320px", flexShrink: 0 }}>
-          {liveScores.length > 0 && (
-            <div style={{ background: `linear-gradient(135deg,${C.bgCard},${C.bgCard2})`, border: `1px solid ${C.borderMid}`, borderRadius: "16px", overflow: "hidden", marginBottom: "16px" }}>
-              <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.borderMid}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ fontFamily: "'Bebas Neue', cursive", fontSize: "18px", color: C.textPrimary }}>🏏 LIVE SCORES</div>
-                <span style={{ background: C.accentSoft, border: `1px solid ${C.accentBorder}`, color: C.accentBright, fontSize: "10px", padding: "2px 8px", borderRadius: "20px", animation: "pulse 1.5s infinite" }}>● LIVE</span>
-              </div>
-              {liveScores.map((s, i) => (
-                <div key={i} style={{ padding: "12px 16px", borderBottom: i < liveScores.length-1 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ color: C.textPrimary, fontSize: "12px", fontWeight: "700", marginBottom: "4px" }}>{s.matchInfo?.team1?.teamName} vs {s.matchInfo?.team2?.teamName}</div>
-                  <div style={{ color: C.accentBright, fontSize: "11px" }}>{s.matchScore?.team1Score?.inngs1?.runs}/{s.matchScore?.team1Score?.inngs1?.wickets} • {s.matchInfo?.status}</div>
-                </div>
-              ))}
-            </div>
-          )}
           <div style={{ background: `linear-gradient(135deg,${C.bgCard},${C.bgCard2})`, border: `1px solid ${C.border}`, borderRadius: "16px", overflow: "hidden", position: "sticky", top: "90px" }}>
             <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.borderMid}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ fontFamily: "'Bebas Neue', cursive", fontSize: "20px", color: C.textPrimary }}>📰 LATEST NEWS</div>
               <span style={{ background: C.accentSoft, border: `1px solid ${C.accentBorder}`, color: C.accentBright, fontSize: "11px", padding: "2px 8px", borderRadius: "20px" }}>LIVE</span>
             </div>
-            {news.map((item, i) => (
+            {news.map((item) => (
               <div key={item.id} style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", transition: "background 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.background=C.accentSoft}
                 onMouseLeave={e => e.currentTarget.style.background="transparent"}>
-                <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", gap: "8px" }}>
                   {item.hot && <span style={{ color: C.accent, fontSize: "14px", flexShrink: 0 }}>🔥</span>}
                   <div>
                     <div style={{ fontSize: "13px", color: C.textPrimary, lineHeight: "1.4", marginBottom: "6px", fontWeight: "500" }}>{item.title}</div>
@@ -509,10 +479,10 @@ const MainWebsite = () => {
             {apiNews.length > 0 && (
               <>
                 <div style={{ padding: "8px 16px", background: "rgba(255,69,0,0.08)", borderBottom: `1px solid ${C.borderMid}` }}>
-                  <span style={{ color: C.accentBright, fontSize: "10px", fontWeight: "700", letterSpacing: "1px" }}>🌐 CRICBUZZ AUTO NEWS</span>
+                  <span style={{ color: C.accentBright, fontSize: "10px", fontWeight: "700", letterSpacing: "1px" }}>🌐 GOOGLE NEWS AUTO</span>
                 </div>
                 {apiNews.map((item, i) => (
-                  <div key={`api-${i}`} style={{ padding: "12px 16px", borderBottom: i < apiNews.length-1 ? `1px solid ${C.border}` : "none", cursor: "pointer", transition: "background 0.2s" }}
+                  <div key={i} style={{ padding: "12px 16px", borderBottom: i < apiNews.length-1 ? `1px solid ${C.border}` : "none", cursor: "pointer", transition: "background 0.2s" }}
                     onMouseEnter={e => e.currentTarget.style.background=C.accentSoft}
                     onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                     <div style={{ display: "flex", gap: "8px" }}>
@@ -520,7 +490,7 @@ const MainWebsite = () => {
                       <div>
                         <div style={{ fontSize: "12px", color: C.textPrimary, lineHeight: "1.4", marginBottom: "5px", fontWeight: "500" }}>{item.title}</div>
                         <div style={{ display: "flex", gap: "8px" }}>
-                          <span style={{ background: "rgba(33,150,243,0.15)", border: "1px solid rgba(33,150,243,0.3)", color: "#64b5f6", fontSize: "9px", padding: "1px 6px", borderRadius: "20px", fontWeight: "700" }}>CRICBUZZ</span>
+                          <span style={{ background: "rgba(33,150,243,0.15)", border: "1px solid rgba(33,150,243,0.3)", color: "#64b5f6", fontSize: "9px", padding: "1px 6px", borderRadius: "20px", fontWeight: "700" }}>GOOGLE</span>
                           <span style={{ color: C.textMuted, fontSize: "10px" }}>{item.time}</span>
                         </div>
                       </div>
