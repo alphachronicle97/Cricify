@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const SUPABASE_URL = "https://rnmiuggvwvluzpqicjqn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_VzshP4nH__Mk5BEplgO5VQ_QiIgnUt8";
-const ADMIN_PASSWORD = "admin123"; // ← apna password yahan badlo
+const ADMIN_PASSWORD = "*kanishka@#23122010*"; // ← apna password yahan badlo
 
 const C = {
   accent: "#ff4500",
