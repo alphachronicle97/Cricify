@@ -4,18 +4,23 @@ const SUPABASE_URL = "https://rnmiuggvwvluzpqicjqn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_VzshP4nH__Mk5BEplgO5VQ_QiIgnUt8";
 const ADMIN_PASSWORD = "*kanishka@#23122010*";
 
-const RAPID_API_KEY = "68a566cd4amsh918aa2560a0f5d7p146da5jsn88dcd99fe904";
-const RAPID_API_HOST = "free-cricbuzz-cricket-api.p.rapidapi.com";
-
-const fetchCricket = async (endpoint) => {
+const fetchGoogleNews = async () => {
   try {
-    const res = await fetch(`https://${RAPID_API_HOST}/${endpoint}`, {
-      headers: {
-        "x-rapidapi-key": RAPID_API_KEY,
-        "x-rapidapi-host": RAPID_API_HOST,
-      },
-    });
-    if (!res.ok) return null;
+    const res = await fetch(
+      "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss/search?q=cricket+india&hl=en-IN&gl=IN&ceid=IN:en"
+    );
+    const data = await res.json();
+    if (data.items) {
+      return data.items.slice(0, 8).map(n => ({
+        title: n.title,
+        tag: "CRICKET",
+        time: new Date(n.pubDate).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+        hot: true,
+      }));
+    }
+    return [];
+  } catch { return []; }
+};
     return await res.json();
   } catch { return null; }
 };
@@ -346,20 +351,21 @@ const MainWebsite = () => {
   }, []);
 
   const loadApiData = useCallback(async () => {
-    const [newsData, scoresData] = await Promise.all([
-      fetchCricket("cricket-news"),
-      fetchCricket("cricket-live-scores"),
-    ]);
-    if (newsData?.data) {
-      setApiNews(newsData.data.slice(0, 8).map(n => ({
-        title: n.title || n.storyLine,
-        tag: n.source || "CRICKET",
-        time: n.pubDate ? new Date(n.pubDate).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "Live",
+  try {
+    const res = await fetch(
+      "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss/search?q=cricket+india&hl=en-IN&gl=IN&ceid=IN:en"
+    );
+    const data = await res.json();
+    if (data.items) {
+      setApiNews(data.items.slice(0, 8).map(n => ({
+        title: n.title,
+        tag: "CRICKET",
+        time: new Date(n.pubDate).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
         hot: true,
       })));
     }
-    if (scoresData?.data) setLiveScores(scoresData.data.slice(0, 5));
-  }, []);
+  } catch {}
+}, []);
 
   useEffect(() => { loadData(); loadApiData(); }, [loadData, loadApiData]);
   useEffect(() => { const i = setInterval(loadData, 30000); return () => clearInterval(i); }, [loadData]);
