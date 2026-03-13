@@ -334,9 +334,14 @@ const AdminDashboard = ({ onLogout }) => {
                         <div style={{ color:"#aaa",fontSize:"11px",marginBottom:"4px",fontWeight:"600",textTransform:"uppercase" }}>Status</div>
                         <select value={editMatch.status} onChange={e => setEditMatch({...editMatch,status:e.target.value})} style={{ width:"100%",background:"#1a1a25",border:"1px solid #2a2a3a",borderRadius:"8px",padding:"9px 12px",color:"#fff",fontSize:"13px",outline:"none" }}>
                           <option value="LIVE">🔴 LIVE</option>
-                          <option value="TODAY 7:30 PM">📅 TODAY</option>
-                          <option value="TOMORROW 3:00 PM">📅 TOMORROW</option>
-                          <option value="COMPLETED">✅ COMPLETED</option>
+<option value="STARTING SOON">⏳ STARTING SOON</option>
+<option value="TODAY 3:00 PM">📅 TODAY 3:00 PM</option>
+<option value="TODAY 7:30 PM">📅 TODAY 7:30 PM</option>
+<option value="TODAY 9:00 PM">📅 TODAY 9:00 PM</option>
+<option value="TOMORROW 3:00 PM">📅 TOMORROW 3:00 PM</option>
+<option value="TOMORROW 7:30 PM">📅 TOMORROW 7:30 PM</option>
+<option value="TOMORROW 9:00 PM">📅 TOMORROW 9:00 PM</option>
+<option value="COMPLETED">✅ COMPLETED</option>
                         </select>
                       </div>
                       <Input label="Match Type" value={editMatch.type} onChange={v => setEditMatch({...editMatch,type:v})} placeholder="T20 • Series" />
