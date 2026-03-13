@@ -11,8 +11,7 @@ const C = {
   border: "#1a2028", borderMid: "#222c36", borderLight: "#2a3848",
   textPrimary: "#eef2f6", textSecondary: "#8a9bb0", textMuted: "#4a5a6a",
   gradient: "linear-gradient(135deg, #e8380d, #ff6b35)",
-  gradientBlue: "linear-gradient(135deg, #0f1923, #0a1420)",
-  white: "#ffffff", success: "#22c55e", gold: "#f59e0b",
+  white: "#ffffff", success: "#22c55e",
 };
 
 const sb = async (method, table, body = null, filter = "") => {
@@ -34,6 +33,21 @@ const dbInsert = (table, data) => sb("POST", table, data);
 const dbUpdate = (table, id, data) => sb("PATCH", table, data, `?id=eq.${id}`);
 const dbDelete = (table, id) => sb("DELETE", table, null, `?id=eq.${id}`);
 
+// Match status helpers
+const isLive = (m) => m.status === "LIVE";
+const isUpcoming = (m) => m.status === "UPCOMING";
+const isCompleted = (m) => m.status === "COMPLETED";
+
+const getStatusDisplay = (m) => {
+  if (isLive(m)) return { label: "● LIVE", color: C.accentBright, bg: C.accentSoft, border: C.accentBorder };
+  if (isCompleted(m)) return { label: "COMPLETED", color: "#666", bg: "rgba(100,100,100,0.1)", border: "rgba(100,100,100,0.2)" };
+  if (isUpcoming(m)) {
+    const dateTime = [m.match_date, m.match_time].filter(Boolean).join(" • ");
+    return { label: dateTime || "UPCOMING", color: "#60a5fa", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.25)" };
+  }
+  return { label: m.status || "UPCOMING", color: "#60a5fa", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.25)" };
+};
+
 const fetchGoogleNews = async () => {
   try {
     const res = await fetch("https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dcricket%2Bindia%26hl%3Den-IN%26gl%3DIN%26ceid%3DIN%3Aen");
@@ -46,7 +60,7 @@ const fetchGoogleNews = async () => {
 const Input = ({ label, value, onChange, placeholder, type = "text" }) => (
   <div style={{ marginBottom: "14px" }}>
     {label && <div style={{ color: C.textSecondary, fontSize: "11px", marginBottom: "5px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px" }}>{label}</div>}
-    <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+    <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid ${C.borderLight}`, borderRadius: "8px", padding: "10px 14px", color: C.textPrimary, fontSize: "13px", outline: "none", fontFamily: "inherit" }} />
   </div>
 );
@@ -54,7 +68,7 @@ const Input = ({ label, value, onChange, placeholder, type = "text" }) => (
 const Textarea = ({ label, value, onChange, placeholder, rows = 5 }) => (
   <div style={{ marginBottom: "14px" }}>
     {label && <div style={{ color: C.textSecondary, fontSize: "11px", marginBottom: "5px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px" }}>{label}</div>}
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+    <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
       style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid ${C.borderLight}`, borderRadius: "8px", padding: "10px 14px", color: C.textPrimary, fontSize: "13px", outline: "none", fontFamily: "inherit", resize: "vertical" }} />
   </div>
 );
@@ -64,7 +78,7 @@ const Footer = ({ onNav }) => (
     <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "30px", marginBottom: "32px" }}>
         <div style={{ maxWidth: "280px" }}>
-          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "22px", color: C.textPrimary, fontWeight: "700", marginBottom: "12px", letterSpacing: "1px" }}>
+          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "22px", color: C.textPrimary, fontWeight: "700", marginBottom: "12px" }}>
             <span style={{ color: C.accent }}>CRICI</span>FY
           </div>
           <p style={{ color: C.textMuted, fontSize: "13px", lineHeight: "1.8" }}>India's premier cricket streaming and news platform — live scores, streams, and breaking cricket news.</p>
@@ -77,7 +91,7 @@ const Footer = ({ onNav }) => (
             <div key={col.title}>
               <div style={{ color: C.textPrimary, fontWeight: "700", fontSize: "11px", marginBottom: "14px", textTransform: "uppercase", letterSpacing: "2px" }}>{col.title}</div>
               {col.links.map(([label, page]) => (
-                <div key={page} onClick={() => onNav(page)} style={{ color: C.textMuted, fontSize: "13px", marginBottom: "10px", cursor: "pointer", transition: "color 0.2s" }}
+                <div key={page} onClick={() => onNav(page)} style={{ color: C.textMuted, fontSize: "13px", marginBottom: "10px", cursor: "pointer" }}
                   onMouseEnter={e => e.target.style.color = C.accentBright} onMouseLeave={e => e.target.style.color = C.textMuted}>{label}</div>
               ))}
             </div>
@@ -131,8 +145,8 @@ const AboutUs = ({ onBack }) => (
     </header>
     <div style={{ background: `linear-gradient(160deg, #0f1923 0%, #060a0e 100%)`, padding: "70px 20px", textAlign: "center", borderBottom: `1px solid ${C.border}` }}>
       <div style={{ color: C.accent, fontSize: "12px", fontWeight: "700", letterSpacing: "3px", marginBottom: "16px" }}>EST. 2024</div>
-      <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "52px", color: C.textPrimary, marginBottom: "16px" }}>About Cricify</h1>
-      <p style={{ color: C.textSecondary, fontSize: "16px", maxWidth: "500px", margin: "0 auto", lineHeight: "1.8" }}>India's fastest growing cricket streaming & scores platform — bringing the game closer to every fan.</p>
+      <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(32px,6vw,52px)", color: C.textPrimary, marginBottom: "16px" }}>About Cricify</h1>
+      <p style={{ color: C.textSecondary, fontSize: "16px", maxWidth: "500px", margin: "0 auto", lineHeight: "1.8" }}>India's fastest growing cricket streaming and scores platform.</p>
     </div>
     <div style={{ maxWidth: "800px", margin: "0 auto", padding: "50px 20px" }}>
       {[
@@ -141,9 +155,9 @@ const AboutUs = ({ onBack }) => (
         { icon: "📰", title: "Cricket News", text: "Breaking news, player updates, match previews and expert cricket analysis." },
         { icon: "✍️", title: "Articles", text: "In-depth cricket articles, match reviews, and player profiles from our editorial team." },
       ].map(item => (
-        <div key={item.title} style={{ display: "flex", gap: "20px", marginBottom: "28px", padding: "24px", background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "12px" }}>
-          <div style={{ fontSize: "32px" }}>{item.icon}</div>
-          <div><h3 style={{ color: C.textPrimary, fontWeight: "700", marginBottom: "8px" }}>{item.title}</h3><p style={{ color: C.textSecondary, fontSize: "14px", lineHeight: "1.7" }}>{item.text}</p></div>
+        <div key={item.title} style={{ display: "flex", gap: "20px", marginBottom: "20px", padding: "22px", background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "12px" }}>
+          <div style={{ fontSize: "30px" }}>{item.icon}</div>
+          <div><h3 style={{ color: C.textPrimary, fontWeight: "700", marginBottom: "6px" }}>{item.title}</h3><p style={{ color: C.textSecondary, fontSize: "14px", lineHeight: "1.7" }}>{item.text}</p></div>
         </div>
       ))}
     </div>
@@ -166,8 +180,7 @@ const ContactUs = ({ onBack }) => {
         {sent ? (
           <div style={{ textAlign: "center", padding: "50px", background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "16px" }}>
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>✅</div>
-            <div style={{ color: C.success, fontSize: "18px", fontWeight: "700", marginBottom: "8px" }}>Message Sent!</div>
-            <div style={{ color: C.textMuted, fontSize: "14px" }}>We'll respond within 24 hours.</div>
+            <div style={{ color: C.success, fontSize: "18px", fontWeight: "700" }}>Message Sent!</div>
           </div>
         ) : (
           <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "16px", padding: "32px" }}>
@@ -194,19 +207,15 @@ const ArticleView = ({ article, onBack, onNav }) => (
       <button onClick={onBack} style={{ background: "transparent", border: `1px solid ${C.borderLight}`, color: C.textSecondary, borderRadius: "6px", padding: "7px 16px", cursor: "pointer", fontSize: "13px" }}>← Articles</button>
     </header>
     <div style={{ maxWidth: "780px", margin: "0 auto", padding: "50px 20px" }}>
-      <div style={{ marginBottom: "8px" }}>
-        <span style={{ color: C.accent, fontSize: "11px", fontWeight: "700", letterSpacing: "2px" }}>{article.category.toUpperCase()}</span>
-      </div>
-      <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(28px, 5vw, 44px)", color: C.textPrimary, lineHeight: "1.2", marginBottom: "20px" }}>{article.title}</h1>
+      <div style={{ color: C.accent, fontSize: "11px", fontWeight: "700", letterSpacing: "2px", marginBottom: "10px" }}>{article.category?.toUpperCase()}</div>
+      <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(26px,5vw,42px)", color: C.textPrimary, lineHeight: "1.2", marginBottom: "20px" }}>{article.title}</h1>
       <div style={{ display: "flex", gap: "20px", color: C.textMuted, fontSize: "13px", marginBottom: "36px", paddingBottom: "24px", borderBottom: `1px solid ${C.border}` }}>
         <span>✍️ {article.author}</span>
         <span>📅 {new Date(article.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</span>
       </div>
-      <div>
-        {article.content.split("\n").map((para, i) => para.trim() && (
-          <p key={i} style={{ color: C.textSecondary, fontSize: "15px", lineHeight: "2", marginBottom: "22px" }}>{para}</p>
-        ))}
-      </div>
+      {article.content?.split("\n").map((para, i) => para.trim() && (
+        <p key={i} style={{ color: C.textSecondary, fontSize: "15px", lineHeight: "2", marginBottom: "22px" }}>{para}</p>
+      ))}
     </div>
     <Footer onNav={onNav} />
   </div>
@@ -234,7 +243,7 @@ const ArticlesPage = ({ onNav, onArticleClick }) => {
       <div style={{ background: `linear-gradient(160deg, #0f1923, #060a0e)`, padding: "50px 20px 40px", borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ color: C.accent, fontSize: "11px", fontWeight: "700", letterSpacing: "3px", marginBottom: "12px" }}>EDITORIAL</div>
-          <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(32px, 6vw, 50px)", color: C.textPrimary }}>Cricket Articles</h1>
+          <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(30px,6vw,50px)", color: C.textPrimary }}>Cricket Articles</h1>
         </div>
       </div>
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "28px 20px" }}>
@@ -248,19 +257,17 @@ const ArticlesPage = ({ onNav, onArticleClick }) => {
         {loading ? <div style={{ textAlign: "center", padding: "80px", color: C.textMuted }}>Loading...</div>
           : filtered.length === 0 ? <div style={{ textAlign: "center", padding: "80px", color: C.textMuted }}><div style={{ fontSize: "40px", marginBottom: "12px" }}>📝</div>No articles found</div>
           : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "20px" }}>
               {filtered.map(a => (
                 <div key={a.id} onClick={() => onArticleClick(a)} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "12px", overflow: "hidden", cursor: "pointer", transition: "all 0.25s" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = C.accentBorder; e.currentTarget.style.transform = "translateY(-4px)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; }}>
-                  <div style={{ height: "160px", background: `linear-gradient(135deg, #1a2030, #0d1420)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: "44px" }}>🏏</span>
-                  </div>
+                  <div style={{ height: "160px", background: `linear-gradient(135deg, #1a2030, #0d1420)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px" }}>🏏</div>
                   <div style={{ padding: "18px" }}>
-                    <div style={{ color: C.accent, fontSize: "10px", fontWeight: "700", letterSpacing: "1.5px", marginBottom: "8px" }}>{a.category.toUpperCase()}</div>
+                    <div style={{ color: C.accent, fontSize: "10px", fontWeight: "700", letterSpacing: "1.5px", marginBottom: "8px" }}>{a.category?.toUpperCase()}</div>
                     <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", color: C.textPrimary, fontSize: "15px", lineHeight: "1.5", marginBottom: "10px" }}>{a.title}</h3>
-                    <p style={{ color: C.textMuted, fontSize: "12px", lineHeight: "1.6", marginBottom: "14px" }}>{a.content.substring(0, 90)}...</p>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ color: C.textMuted, fontSize: "12px", lineHeight: "1.6", marginBottom: "12px" }}>{a.content?.substring(0, 90)}...</p>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ color: C.textMuted, fontSize: "11px" }}>✍️ {a.author}</span>
                       <span style={{ color: C.accentBright, fontSize: "12px", fontWeight: "600" }}>Read →</span>
                     </div>
@@ -285,10 +292,11 @@ const StreamPlayer = ({ match, onClose }) => {
             <span style={{ background: C.gradient, color: "#fff", padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "800" }}>● LIVE</span>
             <span style={{ color: C.textPrimary, fontWeight: "700", fontSize: "15px" }}>{match.flag1} {match.team1} vs {match.team2} {match.flag2}</span>
           </div>
-          <button onClick={onClose} style={{ background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.3)", color: "#ff5252", borderRadius: "8px", padding: "6px 14px", cursor: "pointer" }}>✕</button>
+          <button onClick={onClose} style={{ background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.3)", color: "#ff5252", borderRadius: "8px", padding: "6px 14px", cursor: "pointer" }}>✕ Close</button>
         </div>
         <div style={{ width: "100%", aspectRatio: "16/9", background: "#020304", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {match.stream_url ? <iframe src={match.stream_url} style={{ width: "100%", height: "100%", border: "none", position: "absolute", inset: 0 }} allowFullScreen title="stream" />
+          {match.stream_url
+            ? <iframe src={match.stream_url} style={{ width: "100%", height: "100%", border: "none", position: "absolute", inset: 0 }} allowFullScreen title="stream" />
             : <div style={{ textAlign: "center" }}><div style={{ fontSize: "52px", marginBottom: "12px" }}>📺</div><div style={{ color: C.textSecondary, fontSize: "16px" }}>Stream Coming Soon</div></div>}
         </div>
         <div style={{ padding: "12px 20px", background: "#050709", display: "flex", alignItems: "center", gap: "12px", borderTop: `1px solid ${C.border}` }}>
@@ -307,7 +315,6 @@ const AdminLoginPage = ({ onSuccess }) => {
   const tryLogin = () => { if (pass === ADMIN_PASSWORD) onSuccess(); else { setError(true); setTimeout(() => setError(false), 2000); setPass(""); } };
   return (
     <div style={{ minHeight: "100vh", background: "#040608", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Segoe UI', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');`}</style>
       <div style={{ background: C.bgCard, border: `1px solid ${C.borderMid}`, borderRadius: "20px", padding: "50px 44px", width: "100%", maxWidth: "400px", textAlign: "center" }}>
         <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "26px", color: C.textPrimary, fontWeight: "700", marginBottom: "6px" }}><span style={{ color: C.accent }}>CRICI</span>FY</div>
         <div style={{ color: C.textMuted, fontSize: "12px", marginBottom: "36px", letterSpacing: "2px" }}>ADMIN PORTAL</div>
@@ -346,33 +353,43 @@ const AdminDashboard = ({ onLogout }) => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const blankMatch = { team1: "", team2: "", flag1: "🏏", flag2: "🏏", score1: "—", score2: "—", overs1: "—", overs2: "—", status: "LIVE", match_date: "", match_time: "", type: "T20 • IPL 2026", venue: "", stream: false, stream_url: "", result: "" };
-  const blankNews = { title: "", tag: "IPL", time: "Just now", hot: false };
-  const blankArticle = { title: "", content: "", category: "Cricket", author: "Cricify Staff", image_url: "" };
-
-  const getMatchStatus = (m) => {
-    if (m.status === "LIVE") return "LIVE";
-    if (m.status === "COMPLETED") return "COMPLETED";
-    if (m.match_date && m.match_time) return `${m.match_date} • ${m.match_time}`;
-    return m.status;
-  };
 
   const saveMatch = async () => {
     if (!editMatch.team1 || !editMatch.team2) { showToast("❌ Team names required!"); return; }
     setSaving(true);
-    const dataToSave = { ...editMatch };
-    if (editMatch.id) await dbUpdate("matches", editMatch.id, dataToSave);
-    else await dbInsert("matches", dataToSave);
+    if (editMatch.id) await dbUpdate("matches", editMatch.id, editMatch);
+    else await dbInsert("matches", editMatch);
     await loadData(); setEditMatch(null); setSaving(false); showToast("✅ Match saved!");
   };
   const deleteMatch = async (id) => { if (!window.confirm("Delete?")) return; await dbDelete("matches", id); await loadData(); showToast("🗑 Deleted!"); };
-  const saveNews = async () => { if (!editNews.title) { showToast("❌ Headline required!"); return; } setSaving(true); if (editNews.id) await dbUpdate("news", editNews.id, editNews); else await dbInsert("news", editNews); await loadData(); setEditNews(null); setSaving(false); showToast("✅ Saved!"); };
-  const deleteNews = async (id) => { if (!window.confirm("Delete?")) return; await dbDelete("news", id); await loadData(); showToast("🗑 Deleted!"); };
-  const saveArticle = async () => { if (!editArticle.title || !editArticle.content) { showToast("❌ Title & content required!"); return; } setSaving(true); if (editArticle.id) await dbUpdate("articles", editArticle.id, editArticle); else await dbInsert("articles", editArticle); await loadData(); setEditArticle(null); setSaving(false); showToast("✅ Published!"); };
-  const deleteArticle = async (id) => { if (!window.confirm("Delete?")) return; await dbDelete("articles", id); await loadData(); showToast("🗑 Deleted!"); };
+
+  const saveNews = async () => {
+    if (!editNews.title) { showToast("❌ Headline required!"); return; }
+    setSaving(true);
+    if (editNews.id) await dbUpdate("news", editNews.id, editNews); else await dbInsert("news", editNews);
+    await loadData(); setEditNews(null); setSaving(false); showToast("✅ Saved!");
+  };
+  const deleteNews = async (id) => { if (!window.confirm("Delete?")) return; await dbDelete("news", id); await loadData(); };
+
+  const saveArticle = async () => {
+    if (!editArticle.title || !editArticle.content) { showToast("❌ Title & content required!"); return; }
+    setSaving(true);
+    if (editArticle.id) await dbUpdate("articles", editArticle.id, editArticle); else await dbInsert("articles", editArticle);
+    await loadData(); setEditArticle(null); setSaving(false); showToast("✅ Published!");
+  };
+  const deleteArticle = async (id) => { if (!window.confirm("Delete?")) return; await dbDelete("articles", id); await loadData(); };
+
   const addTicker = async () => { if (!newTicker.trim()) return; await dbInsert("ticker", { text: newTicker.trim() }); setNewTicker(""); await loadData(); showToast("✅ Added!"); };
   const deleteTicker = async (id) => { await dbDelete("ticker", id); await loadData(); };
 
   const tabStyle = (key) => ({ padding: "9px 18px", border: "none", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "700", background: tab === key ? C.gradient : "rgba(255,255,255,0.04)", color: tab === key ? "#fff" : "#666" });
+
+  const getAdminStatusLabel = (m) => {
+    if (isLive(m)) return "🔴 LIVE";
+    if (isCompleted(m)) return "✅ COMPLETED";
+    const dt = [m.match_date, m.match_time].filter(Boolean).join(" • ");
+    return `📅 UPCOMING${dt ? ` — ${dt}` : ""}`;
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#040608", fontFamily: "'Segoe UI', sans-serif", color: "#fff" }}>
@@ -404,19 +421,21 @@ const AdminDashboard = ({ onLogout }) => {
         </div>
         {loading ? <div style={{ textAlign: "center", padding: "80px", color: C.textMuted }}>Loading...</div> : (
           <>
+            {/* MATCHES TAB */}
             {tab === "matches" && (
               <div style={{ animation: "fadeIn 0.3s ease" }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
                   <button onClick={() => setEditMatch({ ...blankMatch })} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "8px", padding: "9px 20px", cursor: "pointer", fontWeight: "700", fontSize: "13px" }}>+ Add Match</button>
                 </div>
+                {matches.length === 0 && !editMatch && <div style={{ textAlign: "center", padding: "40px", color: "#444" }}>No matches yet</div>}
                 {matches.map(m => (
-                  <div key={m.id} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px 18px", marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div key={m.id} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "14px 18px", marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
                     <div>
                       <div style={{ color: "#fff", fontWeight: "700", fontSize: "14px", marginBottom: "3px" }}>{m.flag1} {m.team1} vs {m.team2} {m.flag2}</div>
-                      <div style={{ color: "#555", fontSize: "12px" }}>{getMatchStatus(m)} • {m.type}</div>
+                      <div style={{ color: "#555", fontSize: "12px" }}>{getAdminStatusLabel(m)} • {m.type}</div>
                     </div>
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <button onClick={() => setEditMatch({ ...m, match_date: m.match_date || "", match_time: m.match_time || "" })} style={{ background: "rgba(255,165,0,0.1)", border: "1px solid rgba(255,165,0,0.25)", color: "#ffa500", borderRadius: "7px", padding: "6px 14px", cursor: "pointer", fontSize: "12px" }}>✏️ Edit</button>
+                      <button onClick={() => setEditMatch({ ...blankMatch, ...m })} style={{ background: "rgba(255,165,0,0.1)", border: "1px solid rgba(255,165,0,0.25)", color: "#ffa500", borderRadius: "7px", padding: "6px 14px", cursor: "pointer", fontSize: "12px" }}>✏️ Edit</button>
                       <button onClick={() => deleteMatch(m.id)} style={{ background: "rgba(255,80,80,0.1)", border: "1px solid rgba(255,80,80,0.25)", color: "#ff5252", borderRadius: "7px", padding: "6px 12px", cursor: "pointer" }}>🗑</button>
                     </div>
                   </div>
@@ -425,43 +444,60 @@ const AdminDashboard = ({ onLogout }) => {
                   <div style={{ background: "#080c10", border: `1px solid ${C.borderMid}`, borderRadius: "14px", padding: "24px", marginTop: "14px" }}>
                     <div style={{ color: C.accentBright, fontWeight: "700", fontSize: "15px", marginBottom: "20px" }}>{editMatch.id ? "✏️ Edit Match" : "➕ New Match"}</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                      <Input label="Team 1" value={editMatch.team1} onChange={v => setEditMatch({ ...editMatch, team1: v })} placeholder="India" />
-                      <Input label="Team 2" value={editMatch.team2} onChange={v => setEditMatch({ ...editMatch, team2: v })} placeholder="Australia" />
-                      <Input label="Flag 1" value={editMatch.flag1} onChange={v => setEditMatch({ ...editMatch, flag1: v })} placeholder="🇮🇳" />
-                      <Input label="Flag 2" value={editMatch.flag2} onChange={v => setEditMatch({ ...editMatch, flag2: v })} placeholder="🇦🇺" />
+                      <Input label="Team 1 Name" value={editMatch.team1} onChange={v => setEditMatch({ ...editMatch, team1: v })} placeholder="India" />
+                      <Input label="Team 2 Name" value={editMatch.team2} onChange={v => setEditMatch({ ...editMatch, team2: v })} placeholder="Australia" />
+                      <Input label="Flag 1 (emoji)" value={editMatch.flag1} onChange={v => setEditMatch({ ...editMatch, flag1: v })} placeholder="🇮🇳" />
+                      <Input label="Flag 2 (emoji)" value={editMatch.flag2} onChange={v => setEditMatch({ ...editMatch, flag2: v })} placeholder="🇦🇺" />
                       <Input label="Score 1" value={editMatch.score1} onChange={v => setEditMatch({ ...editMatch, score1: v })} placeholder="187/4" />
                       <Input label="Score 2" value={editMatch.score2} onChange={v => setEditMatch({ ...editMatch, score2: v })} placeholder="183/7" />
                       <Input label="Overs 1" value={editMatch.overs1} onChange={v => setEditMatch({ ...editMatch, overs1: v })} placeholder="20.0" />
                       <Input label="Overs 2" value={editMatch.overs2} onChange={v => setEditMatch({ ...editMatch, overs2: v })} placeholder="19.3" />
                     </div>
-                    <div style={{ marginBottom: "14px" }}>
-                      <div style={{ color: C.textSecondary, fontSize: "11px", marginBottom: "5px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px" }}>Match Status</div>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        {["LIVE", "UPCOMING", "COMPLETED"].map(s => (
-                          <button key={s} onClick={() => setEditMatch({ ...editMatch, status: s })}
-                            style={{ padding: "7px 16px", border: `1px solid ${editMatch.status === s ? C.accentBorder : C.borderLight}`, borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "700", background: editMatch.status === s ? C.accentSoft : "transparent", color: editMatch.status === s ? C.accentBright : C.textMuted }}>
-                            {s === "LIVE" ? "🔴 LIVE" : s === "UPCOMING" ? "📅 UPCOMING" : "✅ COMPLETED"}
+
+                    {/* STATUS SELECTOR */}
+                    <div style={{ marginBottom: "16px" }}>
+                      <div style={{ color: C.textSecondary, fontSize: "11px", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px" }}>Match Status</div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        {[
+                          { val: "LIVE", icon: "🔴", label: "LIVE" },
+                          { val: "UPCOMING", icon: "📅", label: "UPCOMING" },
+                          { val: "COMPLETED", icon: "✅", label: "COMPLETED" },
+                        ].map(s => (
+                          <button key={s.val} onClick={() => setEditMatch({ ...editMatch, status: s.val })}
+                            style={{ flex: 1, padding: "10px", border: `1px solid ${editMatch.status === s.val ? C.accentBorder : C.borderLight}`, borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "700", background: editMatch.status === s.val ? C.accentSoft : "transparent", color: editMatch.status === s.val ? C.accentBright : C.textMuted }}>
+                            {s.icon} {s.label}
                           </button>
                         ))}
                       </div>
                     </div>
+
+                    {/* DATE TIME — only show for UPCOMING */}
                     {editMatch.status === "UPCOMING" && (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px", background: C.accentSoft, border: `1px solid ${C.accentBorder}`, borderRadius: "10px", padding: "14px", marginBottom: "14px" }}>
-                        <Input label="📅 Match Date (e.g. 15 March 2026)" value={editMatch.match_date || ""} onChange={v => setEditMatch({ ...editMatch, match_date: v })} placeholder="15 March 2026" />
-                        <Input label="⏰ Match Time (e.g. 7:30 PM IST)" value={editMatch.match_time || ""} onChange={v => setEditMatch({ ...editMatch, match_time: v })} placeholder="7:30 PM IST" />
+                      <div style={{ background: "rgba(96,165,250,0.07)", border: "1px solid rgba(96,165,250,0.2)", borderRadius: "10px", padding: "16px", marginBottom: "16px" }}>
+                        <div style={{ color: "#60a5fa", fontSize: "11px", fontWeight: "700", letterSpacing: "1px", marginBottom: "12px" }}>📅 MATCH SCHEDULE</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+                          <Input label="Match Date (e.g. 15 March 2026)" value={editMatch.match_date} onChange={v => setEditMatch({ ...editMatch, match_date: v })} placeholder="15 March 2026" />
+                          <Input label="Match Time (e.g. 7:30 PM IST)" value={editMatch.match_time} onChange={v => setEditMatch({ ...editMatch, match_time: v })} placeholder="7:30 PM IST" />
+                        </div>
                       </div>
                     )}
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
                       <Input label="Match Type" value={editMatch.type} onChange={v => setEditMatch({ ...editMatch, type: v })} placeholder="T20 • IPL 2026" />
                       <Input label="Venue" value={editMatch.venue} onChange={v => setEditMatch({ ...editMatch, venue: v })} placeholder="Wankhede Stadium" />
                     </div>
-                    <Input label="Result (optional)" value={editMatch.result || ""} onChange={v => setEditMatch({ ...editMatch, result: v })} placeholder="India won by 4 wickets" />
-                    <div style={{ background: C.accentSoft, border: `1px solid ${C.accentBorder}`, borderRadius: "10px", padding: "14px", marginBottom: "14px" }}>
+                    <Input label="Result (for completed matches)" value={editMatch.result} onChange={v => setEditMatch({ ...editMatch, result: v })} placeholder="India won by 4 wickets" />
+
+                    <div style={{ background: C.accentSoft, border: `1px solid ${C.accentBorder}`, borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
                       <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", color: C.textSecondary, fontSize: "14px" }}>
-                        <input type="checkbox" checked={editMatch.stream} onChange={e => setEditMatch({ ...editMatch, stream: e.target.checked })} style={{ accentColor: C.accent, width: "16px", height: "16px" }} />
-                        📺 Enable Live Stream
+                        <input type="checkbox" checked={!!editMatch.stream} onChange={e => setEditMatch({ ...editMatch, stream: e.target.checked })} style={{ accentColor: C.accent, width: "16px", height: "16px" }} />
+                        📺 Enable Live Stream Button
                       </label>
-                      {editMatch.stream && <div style={{ marginTop: "12px" }}><Input label="Stream Embed URL" value={editMatch.stream_url || ""} onChange={v => setEditMatch({ ...editMatch, stream_url: v })} placeholder="https://www.youtube.com/embed/VIDEO_ID" /></div>}
+                      {editMatch.stream && (
+                        <div style={{ marginTop: "12px" }}>
+                          <Input label="Stream Embed URL" value={editMatch.stream_url} onChange={v => setEditMatch({ ...editMatch, stream_url: v })} placeholder="https://www.youtube.com/embed/VIDEO_ID" />
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: "flex", gap: "10px" }}>
                       <button onClick={saveMatch} disabled={saving} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "9px", padding: "11px 26px", cursor: "pointer", fontWeight: "700" }}>{saving ? "Saving..." : "✓ Save Match"}</button>
@@ -471,10 +507,12 @@ const AdminDashboard = ({ onLogout }) => {
                 )}
               </div>
             )}
+
+            {/* NEWS TAB */}
             {tab === "news" && (
               <div style={{ animation: "fadeIn 0.3s ease" }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
-                  <button onClick={() => setEditNews({ ...blankNews })} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "8px", padding: "9px 20px", cursor: "pointer", fontWeight: "700", fontSize: "13px" }}>+ Add News</button>
+                  <button onClick={() => setEditNews({ title: "", tag: "IPL", time: "Just now", hot: false })} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "8px", padding: "9px 20px", cursor: "pointer", fontWeight: "700", fontSize: "13px" }}>+ Add News</button>
                 </div>
                 {news.map(n => (
                   <div key={n.id} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px 18px", marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -494,7 +532,7 @@ const AdminDashboard = ({ onLogout }) => {
                       <Input label="Time" value={editNews.time} onChange={v => setEditNews({ ...editNews, time: v })} placeholder="2 min ago" />
                     </div>
                     <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", color: C.textSecondary, fontSize: "13px", marginBottom: "18px" }}>
-                      <input type="checkbox" checked={editNews.hot} onChange={e => setEditNews({ ...editNews, hot: e.target.checked })} style={{ accentColor: C.accent }} />
+                      <input type="checkbox" checked={!!editNews.hot} onChange={e => setEditNews({ ...editNews, hot: e.target.checked })} style={{ accentColor: C.accent }} />
                       🔥 Mark as Hot
                     </label>
                     <div style={{ display: "flex", gap: "10px" }}>
@@ -505,12 +543,14 @@ const AdminDashboard = ({ onLogout }) => {
                 )}
               </div>
             )}
+
+            {/* ARTICLES TAB */}
             {tab === "articles" && (
               <div style={{ animation: "fadeIn 0.3s ease" }}>
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
-                  <button onClick={() => setEditArticle({ ...blankArticle })} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "8px", padding: "9px 20px", cursor: "pointer", fontWeight: "700", fontSize: "13px" }}>+ Write Article</button>
+                  <button onClick={() => setEditArticle({ title: "", content: "", category: "Cricket", author: "Cricify Staff", image_url: "" })} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "8px", padding: "9px 20px", cursor: "pointer", fontWeight: "700", fontSize: "13px" }}>+ Write Article</button>
                 </div>
-                {articles.length === 0 && !editArticle && <div style={{ textAlign: "center", padding: "50px", color: "#333" }}>No articles yet</div>}
+                {articles.length === 0 && !editArticle && <div style={{ textAlign: "center", padding: "40px", color: "#444" }}>No articles yet</div>}
                 {articles.map(a => (
                   <div key={a.id} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "12px 18px", marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div><div style={{ color: "#fff", fontWeight: "600", fontSize: "13px" }}>{a.title}</div><div style={{ color: "#444", fontSize: "11px" }}>{a.category} • {a.author}</div></div>
@@ -534,7 +574,7 @@ const AdminDashboard = ({ onLogout }) => {
                       <Input label="Author" value={editArticle.author} onChange={v => setEditArticle({ ...editArticle, author: v })} placeholder="Cricify Staff" />
                       <Input label="Image URL (optional)" value={editArticle.image_url} onChange={v => setEditArticle({ ...editArticle, image_url: v })} placeholder="https://..." />
                     </div>
-                    <Textarea label="Content (new line = new paragraph)" value={editArticle.content} onChange={v => setEditArticle({ ...editArticle, content: v })} placeholder="Write article..." rows={10} />
+                    <Textarea label="Content (new line = new paragraph)" value={editArticle.content} onChange={v => setEditArticle({ ...editArticle, content: v })} placeholder="Write article here..." rows={10} />
                     <div style={{ display: "flex", gap: "10px" }}>
                       <button onClick={saveArticle} disabled={saving} style={{ background: C.gradient, border: "none", color: "#fff", borderRadius: "9px", padding: "11px 26px", cursor: "pointer", fontWeight: "700" }}>{saving ? "Publishing..." : "🚀 Publish"}</button>
                       <button onClick={() => setEditArticle(null)} style={{ background: "transparent", border: `1px solid ${C.borderLight}`, color: "#666", borderRadius: "9px", padding: "11px 18px", cursor: "pointer" }}>Cancel</button>
@@ -543,6 +583,8 @@ const AdminDashboard = ({ onLogout }) => {
                 )}
               </div>
             )}
+
+            {/* TICKER TAB */}
             {tab === "ticker" && (
               <div style={{ animation: "fadeIn 0.3s ease" }}>
                 <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "16px", marginBottom: "14px" }}>
@@ -567,6 +609,7 @@ const AdminDashboard = ({ onLogout }) => {
   );
 };
 
+// ─── MAIN WEBSITE ──────────────────────────────────────────────────────
 const MainWebsite = ({ onNav, onArticleClick }) => {
   const [matches, setMatches] = useState([]);
   const [news, setNews] = useState([]);
@@ -581,11 +624,23 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
   const [showSearch, setShowSearch] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [m, n, t, a] = await Promise.all([dbGet("matches", "created_at.asc"), dbGet("news", "created_at.asc"), dbGet("ticker", "created_at.asc"), dbGet("articles")]);
-    if (m) setMatches(m); if (n) setNews(n); if (t) setTicker(t); if (a) setArticles(a.slice(0, 6));
+    const [m, n, t, a] = await Promise.all([
+      dbGet("matches", "created_at.asc"),
+      dbGet("news", "created_at.asc"),
+      dbGet("ticker", "created_at.asc"),
+      dbGet("articles"),
+    ]);
+    if (m) setMatches(m);
+    if (n) setNews(n);
+    if (t) setTicker(t);
+    if (a) setArticles(a.slice(0, 6));
     setLoading(false);
   }, []);
-  const loadApiData = useCallback(async () => { const items = await fetchGoogleNews(); if (items.length > 0) setApiNews(items); }, []);
+
+  const loadApiData = useCallback(async () => {
+    const items = await fetchGoogleNews();
+    if (items.length > 0) setApiNews(items);
+  }, []);
 
   useEffect(() => { loadData(); loadApiData(); }, [loadData, loadApiData]);
   useEffect(() => { const i = setInterval(loadData, 30000); return () => clearInterval(i); }, [loadData]);
@@ -596,52 +651,59 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
     return () => clearInterval(t);
   }, [ticker]);
 
-  const getMatchStatus = (m) => {
-    if (m.status === "LIVE") return { label: "● LIVE", color: C.accent, bg: C.accentSoft, border: C.accentBorder };
-    if (m.status === "COMPLETED") return { label: "COMPLETED", color: "#666", bg: "rgba(100,100,100,0.1)", border: "rgba(100,100,100,0.2)" };
-    return { label: m.match_date && m.match_time ? `${m.match_date} • ${m.match_time}` : m.status, color: "#60a5fa", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.25)" };
-  };
+  // Correct filter logic
+  const liveMatches = matches.filter(m => isLive(m));
+  const upcomingMatches = matches.filter(m => isUpcoming(m));
+  const completedMatches = matches.filter(m => isCompleted(m));
+  const streamMatches = matches.filter(m => m.stream);
 
-  const filteredMatches = matches.filter(m =>
-    activeTab === "live" ? m.status === "LIVE" :
-      activeTab === "upcoming" ? (m.status === "UPCOMING" || m.status?.includes("TODAY") || m.status?.includes("TOMORROW") || m.status?.includes("SOON")) :
-        activeTab === "completed" ? m.status === "COMPLETED" : true
-  ).filter(m => !searchQuery || m.team1?.toLowerCase().includes(searchQuery.toLowerCase()) || m.team2?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredMatches = (
+    activeTab === "live" ? liveMatches :
+    activeTab === "upcoming" ? upcomingMatches :
+    activeTab === "completed" ? completedMatches :
+    matches
+  ).filter(m =>
+    !searchQuery ||
+    m.team1?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.team2?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Segoe UI', sans-serif", color: C.textPrimary }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
+        body{background:#06080a}
         @keyframes tickerSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         .mcard{transition:all 0.22s ease}
-        .mcard:hover{transform:translateY(-3px)!important}
+        .mcard:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(232,56,13,0.12)}
       `}</style>
       {selectedMatch && <StreamPlayer match={selectedMatch} onClose={() => setSelectedMatch(null)} />}
 
+      {/* TICKER */}
       {ticker.length > 0 && (
         <div style={{ background: C.accent, display: "flex", alignItems: "center", overflow: "hidden" }}>
-          <div style={{ background: "rgba(0,0,0,0.25)", color: "#fff", padding: "5px 14px", fontSize: "10px", fontWeight: "800", letterSpacing: "2px", whiteSpace: "nowrap" }}>BREAKING</div>
+          <div style={{ background: "rgba(0,0,0,0.25)", color: "#fff", padding: "5px 14px", fontSize: "10px", fontWeight: "800", letterSpacing: "2px", whiteSpace: "nowrap", flexShrink: 0 }}>BREAKING</div>
           <div key={tickerIdx} style={{ color: "#fff", fontSize: "12px", fontWeight: "600", padding: "5px 16px", animation: "tickerSlide 0.4s ease", whiteSpace: "nowrap" }}>{ticker[tickerIdx]?.text}</div>
         </div>
       )}
 
+      {/* HEADER */}
       <header style={{ background: "rgba(6,8,10,0.98)", borderBottom: `1px solid ${C.border}`, position: "sticky", top: ticker.length > 0 ? "27px" : 0, zIndex: 100, backdropFilter: "blur(20px)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: "60px" }}>
-          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "22px", fontWeight: "700", color: C.textPrimary, letterSpacing: "0.5px", cursor: "pointer" }} onClick={() => onNav("website")}>
+          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "22px", fontWeight: "700", color: C.textPrimary, cursor: "pointer" }} onClick={() => onNav("website")}>
             <span style={{ color: C.accent }}>CRICI</span>FY
           </div>
-          <nav style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+          <nav style={{ display: "flex", gap: "2px" }}>
             {[["Matches", "website"], ["Articles", "articles"]].map(([label, page]) => (
               <button key={page} onClick={() => onNav(page)} style={{ background: "transparent", border: "none", color: C.textSecondary, padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "500" }}
                 onMouseEnter={e => e.target.style.color = C.textPrimary} onMouseLeave={e => e.target.style.color = C.textSecondary}>{label}</button>
             ))}
           </nav>
-          <button onClick={() => setShowSearch(s => !s)} style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.textSecondary, borderRadius: "8px", padding: "7px 14px", cursor: "pointer", fontSize: "13px" }}>🔍</button>
+          <button onClick={() => setShowSearch(s => !s)} style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.textSecondary, borderRadius: "8px", padding: "7px 14px", cursor: "pointer" }}>🔍</button>
         </div>
         {showSearch && (
-          <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 20px", background: "rgba(6,8,10,0.98)" }}>
+          <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 20px" }}>
             <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
               <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search teams or matches..." autoFocus
                 style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.borderMid}`, borderRadius: "8px", padding: "10px 16px", color: C.textPrimary, fontSize: "14px", outline: "none" }} />
@@ -650,27 +712,27 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
         )}
       </header>
 
-      {/* Hero */}
+      {/* HERO */}
       <div style={{ background: `linear-gradient(160deg, #0c1520 0%, #080c10 60%, #060809 100%)`, padding: "clamp(30px,6vw,60px) 20px", borderBottom: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
-          <div style={{ flex: 1, minWidth: "260px" }}>
+          <div style={{ flex: 1, minWidth: "240px" }}>
             <div style={{ color: C.accent, fontSize: "11px", fontWeight: "700", letterSpacing: "3px", marginBottom: "14px" }}>INDIA'S PREMIER CRICKET PLATFORM</div>
-            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(32px,6vw,56px)", color: C.textPrimary, lineHeight: "1.1", marginBottom: "16px", fontWeight: "900" }}>
+            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(28px,5vw,52px)", color: C.textPrimary, lineHeight: "1.15", marginBottom: "16px", fontWeight: "900" }}>
               Live Cricket<br /><span style={{ color: C.accent }}>Scores & Streams</span>
             </h1>
             <p style={{ color: C.textMuted, fontSize: "14px", lineHeight: "1.8", maxWidth: "380px" }}>Real-time scores, live streaming and breaking news from every cricket match worldwide.</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             {[
-              { label: "Live Matches", value: matches.filter(m => m.status === "LIVE").length, icon: "🔴" },
-              { label: "Upcoming", value: matches.filter(m => m.status === "UPCOMING" || m.status?.includes("TODAY") || m.status?.includes("TOMORROW")).length, icon: "📅" },
-              { label: "Live Streams", value: matches.filter(m => m.stream).length, icon: "📺" },
+              { label: "Live Matches", value: liveMatches.length, icon: "🔴" },
+              { label: "Upcoming", value: upcomingMatches.length, icon: "📅" },
+              { label: "Live Streams", value: streamMatches.length, icon: "📺" },
               { label: "Articles", value: articles.length, icon: "✍️" },
             ].map(s => (
-              <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 20px", textAlign: "center", minWidth: "100px" }}>
-                <div style={{ fontSize: "20px", marginBottom: "4px" }}>{s.icon}</div>
-                <div style={{ fontSize: "26px", fontWeight: "800", color: C.accent, lineHeight: 1, fontFamily: "'Playfair Display', serif" }}>{s.value}</div>
-                <div style={{ color: C.textMuted, fontSize: "11px", marginTop: "3px" }}>{s.label}</div>
+              <div key={s.label} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 18px", textAlign: "center", minWidth: "95px" }}>
+                <div style={{ fontSize: "18px", marginBottom: "4px" }}>{s.icon}</div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(22px,4vw,28px)", color: C.accent, fontWeight: "700", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ color: C.textMuted, fontSize: "10px", marginTop: "3px" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -678,62 +740,75 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
       </div>
 
       <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "28px 20px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
-        {/* Main */}
-        <div style={{ flex: 1, minWidth: "280px" }}>
-          {/* Tabs */}
-          <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: "22px" }}>
+        {/* MATCHES MAIN */}
+        <div style={{ flex: 1, minWidth: "260px" }}>
+          {/* TABS */}
+          <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: "22px", overflowX: "auto" }}>
             {[
-              { key: "live", label: "Live", count: matches.filter(m => m.status === "LIVE").length },
-              { key: "upcoming", label: "Upcoming", count: matches.filter(m => m.status === "UPCOMING" || m.status?.includes("TODAY") || m.status?.includes("TOMORROW")).length },
-              { key: "completed", label: "Completed", count: matches.filter(m => m.status === "COMPLETED").length },
+              { key: "live", label: "🔴 Live", count: liveMatches.length },
+              { key: "upcoming", label: "📅 Upcoming", count: upcomingMatches.length },
+              { key: "completed", label: "✅ Completed", count: completedMatches.length },
               { key: "all", label: "All", count: matches.length },
             ].map(t => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)} style={{ background: "transparent", border: "none", borderBottom: `2px solid ${activeTab === t.key ? C.accent : "transparent"}`, color: activeTab === t.key ? C.textPrimary : C.textMuted, padding: "10px 16px", cursor: "pointer", fontSize: "13px", fontWeight: "600", marginBottom: "-1px", transition: "all 0.2s" }}>
+              <button key={t.key} onClick={() => setActiveTab(t.key)}
+                style={{ background: "transparent", border: "none", borderBottom: `2px solid ${activeTab === t.key ? C.accent : "transparent"}`, color: activeTab === t.key ? C.textPrimary : C.textMuted, padding: "10px 16px", cursor: "pointer", fontSize: "13px", fontWeight: "600", marginBottom: "-1px", whiteSpace: "nowrap", flexShrink: 0 }}>
                 {t.label} <span style={{ fontSize: "11px", opacity: 0.7 }}>({t.count})</span>
               </button>
             ))}
           </div>
 
-          {loading ? <div style={{ textAlign: "center", padding: "60px", color: C.textMuted }}>Loading...</div>
-            : filteredMatches.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px", color: C.textMuted, border: `1px dashed ${C.border}`, borderRadius: "12px" }}>
-                <div style={{ fontSize: "36px", marginBottom: "12px" }}>🏏</div>No matches found
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {filteredMatches.map(match => {
-                  const statusInfo = getMatchStatus(match);
-                  return (
-                    <div key={match.id} className="mcard" style={{ background: C.bgCard, border: `1px solid ${match.status === "LIVE" ? C.accentBorder : C.border}`, borderRadius: "14px", padding: "20px", position: "relative", overflow: "hidden", boxShadow: match.status === "LIVE" ? `0 0 30px ${C.accentGlow}` : "none" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px", flexWrap: "wrap", gap: "8px" }}>
-                        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ background: statusInfo.bg, color: statusInfo.color, border: `1px solid ${statusInfo.border}`, padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700" }}>{statusInfo.label}</span>
-                          <span style={{ color: C.textMuted, fontSize: "12px" }}>{match.type}</span>
-                        </div>
-                        {match.venue && <span style={{ color: C.textMuted, fontSize: "11px" }}>📍 {match.venue}</span>}
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "60px", color: C.textMuted }}>Loading...</div>
+          ) : filteredMatches.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px", color: C.textMuted, border: `1px dashed ${C.border}`, borderRadius: "12px" }}>
+              <div style={{ fontSize: "36px", marginBottom: "12px" }}>🏏</div>
+              <div style={{ fontSize: "15px" }}>No {activeTab === "all" ? "" : activeTab} matches found</div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {filteredMatches.map(match => {
+                const statusInfo = getStatusDisplay(match);
+                return (
+                  <div key={match.id} className="mcard" style={{ background: C.bgCard, border: `1px solid ${isLive(match) ? C.accentBorder : C.border}`, borderRadius: "14px", padding: "20px", overflow: "hidden", boxShadow: isLive(match) ? `0 0 30px ${C.accentGlow}` : "none" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ background: statusInfo.bg, color: statusInfo.color, border: `1px solid ${statusInfo.border}`, padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700" }}>{statusInfo.label}</span>
+                        <span style={{ color: C.textMuted, fontSize: "12px" }}>{match.type}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                        <div style={{ flex: 1, textAlign: "center" }}>
-                          <div style={{ fontSize: "clamp(24px,5vw,34px)", marginBottom: "6px" }}>{match.flag1}</div>
-                          <div style={{ fontWeight: "700", fontSize: "clamp(13px,3vw,16px)", color: C.textPrimary, marginBottom: "4px" }}>{match.team1}</div>
-                          {match.score1 !== "—" && <><div style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", color: C.accent, fontWeight: "700", lineHeight: 1 }}>{match.score1}</div><div style={{ color: C.textMuted, fontSize: "11px" }}>{match.overs1} ov</div></>}
-                        </div>
-                        <div style={{ color: C.textMuted, fontSize: "13px", fontWeight: "700", padding: "0 6px" }}>vs</div>
-                        <div style={{ flex: 1, textAlign: "center" }}>
-                          <div style={{ fontSize: "clamp(24px,5vw,34px)", marginBottom: "6px" }}>{match.flag2}</div>
-                          <div style={{ fontWeight: "700", fontSize: "clamp(13px,3vw,16px)", color: C.textPrimary, marginBottom: "4px" }}>{match.team2}</div>
-                          {match.score2 !== "—" && <><div style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", color: C.accent, fontWeight: "700", lineHeight: 1 }}>{match.score2}</div><div style={{ color: C.textMuted, fontSize: "11px" }}>{match.overs2} ov</div></>}
-                        </div>
-                      </div>
-                      {match.result && <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "8px", padding: "8px 14px", marginBottom: "12px", textAlign: "center", color: "#4ade80", fontSize: "12px", fontWeight: "600" }}>🏆 {match.result}</div>}
-                      {match.stream && <button onClick={() => setSelectedMatch(match)} style={{ width: "100%", background: C.gradient, border: "none", borderRadius: "10px", padding: "12px", color: "#fff", fontWeight: "700", fontSize: "14px", cursor: "pointer" }}>▶ Watch Live</button>}
+                      {match.venue && <span style={{ color: C.textMuted, fontSize: "11px" }}>📍 {match.venue}</span>}
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+                      <div style={{ flex: 1, textAlign: "center" }}>
+                        <div style={{ fontSize: "clamp(26px,6vw,36px)", marginBottom: "6px" }}>{match.flag1}</div>
+                        <div style={{ fontWeight: "700", fontSize: "clamp(13px,3vw,16px)", color: C.textPrimary, marginBottom: "4px" }}>{match.team1}</div>
+                        {match.score1 && match.score1 !== "—" && (
+                          <><div style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", color: C.accent, fontWeight: "700", lineHeight: 1 }}>{match.score1}</div>
+                          <div style={{ color: C.textMuted, fontSize: "11px" }}>{match.overs1} ov</div></>
+                        )}
+                      </div>
+                      <div style={{ color: C.textMuted, fontSize: "13px", fontWeight: "700" }}>vs</div>
+                      <div style={{ flex: 1, textAlign: "center" }}>
+                        <div style={{ fontSize: "clamp(26px,6vw,36px)", marginBottom: "6px" }}>{match.flag2}</div>
+                        <div style={{ fontWeight: "700", fontSize: "clamp(13px,3vw,16px)", color: C.textPrimary, marginBottom: "4px" }}>{match.team2}</div>
+                        {match.score2 && match.score2 !== "—" && (
+                          <><div style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(20px,4vw,28px)", color: C.accent, fontWeight: "700", lineHeight: 1 }}>{match.score2}</div>
+                          <div style={{ color: C.textMuted, fontSize: "11px" }}>{match.overs2} ov</div></>
+                        )}
+                      </div>
+                    </div>
+                    {match.result && (
+                      <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "8px", padding: "8px 14px", marginBottom: "12px", textAlign: "center", color: "#4ade80", fontSize: "12px", fontWeight: "600" }}>🏆 {match.result}</div>
+                    )}
+                    {match.stream && (
+                      <button onClick={() => setSelectedMatch(match)} style={{ width: "100%", background: C.gradient, border: "none", borderRadius: "10px", padding: "12px", color: "#fff", fontWeight: "700", fontSize: "14px", cursor: "pointer" }}>▶ Watch Live Stream</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Articles on homepage */}
+          {/* ARTICLES ON HOMEPAGE */}
           {articles.length > 0 && (
             <div style={{ marginTop: "40px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", paddingBottom: "12px", borderBottom: `1px solid ${C.border}` }}>
@@ -747,7 +822,7 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
                     onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; }}>
                     <div style={{ height: "100px", background: `linear-gradient(135deg, #1a2030, #0d1420)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "32px" }}>🏏</div>
                     <div style={{ padding: "12px" }}>
-                      <div style={{ color: C.accent, fontSize: "9px", fontWeight: "700", letterSpacing: "1.5px", marginBottom: "6px" }}>{a.category.toUpperCase()}</div>
+                      <div style={{ color: C.accent, fontSize: "9px", fontWeight: "700", letterSpacing: "1.5px", marginBottom: "6px" }}>{a.category?.toUpperCase()}</div>
                       <h3 style={{ fontFamily: "'Playfair Display', serif", color: C.textPrimary, fontSize: "13px", lineHeight: "1.4" }}>{a.title}</h3>
                     </div>
                   </div>
@@ -757,8 +832,8 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div style={{ width: "clamp(260px, 28%, 300px)", flexShrink: 0 }}>
+        {/* SIDEBAR */}
+        <div style={{ width: "clamp(250px, 28%, 290px)", flexShrink: 0 }}>
           <div style={{ position: "sticky", top: "80px" }}>
             <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: "14px", overflow: "hidden" }}>
               <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -773,7 +848,7 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
                     <div style={{ display: "flex", gap: "8px" }}>
                       {item.hot && <span style={{ color: C.accent, fontSize: "12px", flexShrink: 0 }}>🔥</span>}
                       <div>
-                        <div style={{ fontSize: "12px", color: C.textSecondary, lineHeight: "1.5", marginBottom: "6px", fontWeight: "500" }}>{item.title}</div>
+                        <div style={{ fontSize: "12px", color: C.textSecondary, lineHeight: "1.5", marginBottom: "6px" }}>{item.title}</div>
                         <div style={{ display: "flex", gap: "8px" }}>
                           <span style={{ background: C.accentSoft, border: `1px solid ${C.accentBorder}`, color: C.accentBright, fontSize: "9px", padding: "1px 7px", borderRadius: "20px", fontWeight: "700" }}>{item.tag}</span>
                           <span style={{ color: C.textMuted, fontSize: "10px" }}>{item.time}</span>
@@ -784,20 +859,22 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
                 ))}
                 {apiNews.length > 0 && (
                   <>
-                    <div style={{ padding: "7px 14px", background: "rgba(255,87,34,0.05)", borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ padding: "7px 14px", background: "rgba(255,87,34,0.05)", borderTop: news.length > 0 ? `1px solid ${C.border}` : "none" }}>
                       <span style={{ color: C.textMuted, fontSize: "9px", fontWeight: "700", letterSpacing: "1.5px" }}>GOOGLE NEWS</span>
                     </div>
                     {apiNews.map((item, i) => (
-                      <div key={i} style={{ padding: "11px 14px", borderBottom: i < apiNews.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer", transition: "background 0.2s" }}
+                      <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", padding: "11px 14px", borderBottom: i < apiNews.length - 1 ? `1px solid ${C.border}` : "none", textDecoration: "none", transition: "background 0.2s" }}
                         onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <div style={{ fontSize: "12px", color: C.textSecondary, lineHeight: "1.5", marginBottom: "5px" }}>{item.title}</div>
+                        <div style={{ fontSize: "12px", color: C.textSecondary, lineHeight: "1.5", marginBottom: "4px" }}>{item.title}</div>
                         <span style={{ color: C.textMuted, fontSize: "10px" }}>{item.time}</span>
-                      </div>
+                      </a>
                     ))}
                   </>
                 )}
-                {!news.length && !apiNews.length && <div style={{ padding: "28px", textAlign: "center", color: C.textMuted, fontSize: "13px" }}>Loading news...</div>}
+                {!news.length && !apiNews.length && (
+                  <div style={{ padding: "28px", textAlign: "center", color: C.textMuted, fontSize: "13px" }}>Loading news...</div>
+                )}
               </div>
             </div>
           </div>
@@ -809,7 +886,7 @@ const MainWebsite = ({ onNav, onArticleClick }) => {
 };
 
 export default function App() {
-  const isAdmin = window.location.hash === "#/admin" || window.location.pathname.endsWith("/admin");
+  const isAdmin = window.location.hash === "#/admin";
   const [page, setPage] = useState(isAdmin ? "adminLogin" : "website");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
